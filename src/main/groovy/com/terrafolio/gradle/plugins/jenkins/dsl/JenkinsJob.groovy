@@ -11,20 +11,40 @@ class JenkinsJob extends AbstractJenkinsConfigurable implements JobDSLSupport, D
     final JobManagement jobManagement;
 
     def defaultOverrides = {
-        create([ uri: "createItem", params: [ name: definition.name ] ])
-           get([ uri: "job/${definition.name}/config.xml" ])
-        update([ uri: "job/${definition.name}/config.xml" ])
-        delete([ uri: "job/${definition.name}/doDelete" ])
-    }
+            create([ uri: "createItem", params: [ name: definition.name ] ])
+            get([ uri: "job/${definition.name}/config.xml" ])
+            update([ uri: "job/${definition.name}/config.xml" ])
+            delete([ uri: "job/${definition.name}/doDelete" ])
+     }
 
     JenkinsJob(String name, JobManagement jobManagement) {
         this.name = name
         this.jobManagement = jobManagement
+        serviceOverrides.create([ uri: "${folderUrl}createItem", params: [ name: definition.name ] ])
+        serviceOverrides.get([ uri: "${job.folderUrl}job/${definition.name}/config.xml" ])
+        serviceOverrides.update([ uri: "${job.folderUrl}job/${definition.name}/config.xml" ])
+        serviceOverrides.delete([ uri: "${job.folderUrl}job/${definition.name}/doDelete" ])
     }
 
-    @Override
-    def Closure getDefaultOverrides() {
-        return this.defaultOverrides
+    JenkinsJob(String name, String folder, JobManagement jobManagement) {
+        this.folder = folder
+        println folder
+        JenkinsJob(name, jobManagement)
+    }
+
+    String getFolderUrl() {
+        if ("".equals(folder)) {
+            folder
+        }
+        String theFolder = folder
+        if (!theFolder.startsWith('/')) {
+            theFolder = "/${theFolder}"
+        }
+        theFolder =  ${theFolder.replaceAll("/", "/job/")}
+        if (!theFolder.endsWith("/")) {
+            theFolder = "${theFolder}/"
+        }
+        theFolder
     }
 
     @Override
@@ -97,6 +117,11 @@ class JenkinsJob extends AbstractJenkinsConfigurable implements JobDSLSupport, D
         } else {
             return definition.xml
         }
+    }
+
+    @Override
+    Closure getDefaultOverrides() {
+        return defaultOverrides
     }
 
     @Override

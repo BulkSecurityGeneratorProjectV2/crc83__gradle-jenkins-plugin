@@ -50,8 +50,8 @@ class JenkinsPlugin implements Plugin<Project> {
     def applyConventions(Project project) {
         def MapJobManagement jm = new MapJobManagement(new HashMap<String, String>())
 
-        def jobs = project.container(JenkinsJob) { name ->
-            new JenkinsJob(name, jm)
+        def jobs = project.container(JenkinsJob) { name, folder ->
+            new JenkinsJob(name, folder, jm)
         }
 
         def templates = project.container(JenkinsJobTemplate) { name ->
