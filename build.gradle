@@ -14,6 +14,8 @@ buildscript {
         classpath 'com.gradle.publish:plugin-publish-plugin:0.9.9'
         classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.2'
         classpath 'net.researchgate:gradle-release:2.6.0'
+		classpath 'com.gradle:build-scan-plugin:2.4.1'
+		classpath 'gradle.plugin.com.github.kt3k.coveralls:coveralls-gradle-plugin:2.8.4'
     }
 }
 
@@ -26,9 +28,8 @@ apply plugin: 'maven-publish'
 apply plugin: 'net.researchgate.release'
 apply plugin: 'jacoco'
 apply plugin: 'org.sonarqube'
-
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+apply plugin: 'com.gradle.build-scan'
+apply plugin: 'com.github.kt3k.coveralls'
 
 repositories {
     addAll(buildscript.repositories)
@@ -40,9 +41,22 @@ release {
 
 defaultTasks 'dailyBuild'
 
-task dailyBuild(type: GradleBuild) {
-    tasks = ['jar', 'test', 'jacocoTestReport', 'sonarqube']
+jacocoTestReport {
+    reports {
+        xml.enabled = true // coveralls plugin depends on xml format report
+        html.enabled = true
+    }
 }
+/*
+coveralls {
+    jacocoReportPath 'build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml'
+}
+*/
+
+task dailyBuild(type: GradleBuild) {
+    tasks = ['jar', 'test', 'jacocoTestReport', 'coveralls']
+}
+
 
 sourceSets {
 
@@ -50,8 +64,7 @@ sourceSets {
 
 dependencies {
     compile gradleApi()
-	// https://mvnrepository.com/artifact/org.codehaus.groovy/groovy-all
-	compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.12'
+	//compile 'org.codehaus.groovy:groovy-all:2.4.12'
     compile 'xmlunit:xmlunit:1.3'
     compile 'org.jenkins-ci:version-number:1.4'
 
@@ -78,10 +91,8 @@ if (! project.hasProperty('jenkinsPort')) {
     ext.jenkinsPort = 9999
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.3.1'
-}
-
+// I use sonarcloud only for local build.
+// For travis build please refer coveralls.io
 sonarqube {
     properties {
         property "sonar.sourceEncoding", "UTF-8"
@@ -91,6 +102,12 @@ sonarqube {
     }
 }
 
+buildScan {
+    termsOfServiceUrl = 'https://gradle.com/terms-of-service'     
+    termsOfServiceAgree = 'yes'                                   
+
+    publishAlways()                                               
+}
 
 
 pluginBundle {
